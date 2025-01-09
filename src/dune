@@ -7,5 +7,8 @@
  (libraries base)
  (preprocess
   (pps ppx_compare ppx_hash))
+ (wasm_of_ocaml
+  (wasm_files string_dict.wat)
+  (javascript_files string_dict.js))
  (js_of_ocaml
   (javascript_files string_dict.js)))
