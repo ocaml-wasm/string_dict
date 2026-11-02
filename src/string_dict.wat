@@ -1,10 +1,20 @@
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "env" "caml_copy_nativeint"
       (func $caml_copy_nativeint (param i32) (result (ref eq))))
    (import "env" "Nativeint_val"
       (func $Nativeint_val (param (ref eq)) (result i32)))
+   (import "env" "string_length"
+      (func $string_length (param (ref $string)) (result i32)))
+   (import "env" "string_get"
+      (func $string_get (param (ref $string)) (param i32) (result i32)))
 
-   (type $string (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $block (array (mut (ref eq))))
    (type $int_array (array (mut i32)))
 
@@ -25,35 +35,35 @@
          (block $3_bytes
           (block $4_bytes
            (br_table $0_bytes $1_byte $2_bytes $3_bytes $4_bytes
-              (i32.sub (array.len (local.get $blocks)) (local.get $offset))))
+              (i32.sub (call $string_length (local.get $blocks)) (local.get $offset))))
           (return
              (i32.or
                 (i32.or
-                   (array.get_u $string (local.get $blocks) (local.get $offset))
-                   (i32.shl (array.get_u $string (local.get $blocks)
+                   (call $string_get (local.get $blocks) (local.get $offset))
+                   (i32.shl (call $string_get (local.get $blocks)
                                (i32.add (local.get $offset) (i32.const 1)))
                             (i32.const 8)))
                 (i32.or
-                   (i32.shl (array.get_u $string (local.get $blocks)
+                   (i32.shl (call $string_get (local.get $blocks)
                                (i32.add (local.get $offset) (i32.const 2)))
                             (i32.const 16))
-                   (i32.shl (array.get_u $string (local.get $blocks)
+                   (i32.shl (call $string_get (local.get $blocks)
                                (i32.add (local.get $offset) (i32.const 3)))
                             (i32.const 24))))))
          ;; 3 bytes
          (local.set $res
             (i32.or (i32.shl (local.get $res) (i32.const 8))
-               (array.get_u $string (local.get $blocks)
+               (call $string_get (local.get $blocks)
                         (i32.add (local.get $offset) (i32.const 2))))))
         ;; 2 bytes
         (local.set $res
            (i32.or (i32.shl (local.get $res) (i32.const 8))
-              (array.get_u $string (local.get $blocks)
+              (call $string_get (local.get $blocks)
                        (i32.add (local.get $offset) (i32.const 1))))))
        ;; 1 bytes
        (local.set $res
           (i32.or (i32.shl (local.get $res) (i32.const 8))
-             (array.get_u $string (local.get $blocks) (local.get $offset)))))
+             (call $string_get (local.get $blocks) (local.get $offset)))))
       ;; 0 bytes
       (local.get $res))
 
@@ -67,7 +77,7 @@
          (call $get_block (local.get $blocks) (local.get $offset))))
 
    (func $num_blocks (param $blocks (ref $string)) (result i32)
-      (i32.shr_u (i32.add (array.len (local.get $blocks)) (i32.const 4))
+      (i32.shr_u (i32.add (call $string_length (local.get $blocks)) (i32.const 4))
          (i32.const 2)))
 
    (func (export "Base_string_dict_num_blocks")
